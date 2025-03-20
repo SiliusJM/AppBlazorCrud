@@ -1,0 +1,121 @@
+﻿@page "/movies/edit"
+@using Microsoft.EntityFrameworkCore
+@using BlazorApp.Models
+@inject IDbContextFactory<BlazorApp.Data.BlazorAppContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit</h1>
+
+<h2>Movie</h2>
+<hr />
+@if (Movie is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="Movie" OnValidSubmit="UpdateMovie" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert" />
+                <input type="hidden" name="Movie.Id" value="@Movie.Id" />
+                <div class="mb-3">
+                <label for="title" class="form-label">Título:</label>
+                <InputText id="title" @bind-Value="Movie.Title" class="form-control" placeholder="Ingrese el título" />
+                <ValidationMessage For="() => Movie.Title" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="releasedate" class="form-label">Fecha de publicación:</label>
+                <InputDate id="releasedate" @bind-Value="Movie.ReleaseDate" class="form-control" />
+                <ValidationMessage For="() => Movie.ReleaseDate" class="text-danger" />
+            </div>
+                <div class="mb-3">
+                <label for="genre" class="form-label">Género:</label>
+                <InputSelect id="genre" @bind-Value="Movie.Genre" class="form-control">
+                    <option value="" disabled selected>Seleccione un género</option>
+                    @foreach (var genre in Genres)
+                    {
+                        <option value="@genre">@genre</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Movie.Genre" class="text-danger" />
+            </div>
+                <div class="mb-3">
+                    <label for="price" class="form-label">Precio:</label>
+                    <InputNumber id="price" @bind-Value="Movie.Price" class="form-control" placeholder="Ingrese el precio" />
+                    <ValidationMessage For="() => Movie.Price" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="/movies" class="btn btn-secondary ms-2">Regresar</a>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Movie? Movie { get; set; }
+
+    // Lista de géneros de películas
+    private List<string> Genres = new List<string>
+    {
+        "Acción",
+        "Aventura",
+        "Comedia",
+        "Drama",
+        "Ciencia Ficción",
+        "Terror",
+        "Animación",
+        "Documental",
+        "Romance",
+        "Fantasía"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Movie ??= await context.Movie.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Movie is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    private async Task UpdateMovie()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(Movie!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!MovieExists(Movie!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/movies");
+    }
+
+    private bool MovieExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Movie.Any(e => e.Id == id);
+    }
+}

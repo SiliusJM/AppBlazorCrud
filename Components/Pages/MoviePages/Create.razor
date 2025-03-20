@@ -1,0 +1,85 @@
+﻿@page "/movies/create"
+@using Microsoft.EntityFrameworkCore
+@using BlazorApp.Models
+@inject IDbContextFactory<BlazorApp.Data.BlazorAppContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create</PageTitle>
+
+<h1>Crear</h1>
+
+<h3>Llenar los campos para añadir una nueva película</h3>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm method="post" Model="Movie" OnValidSubmit="AddMovie" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="mb-3">
+                <label for="title" class="form-label">Título:</label>
+                <InputText id="title" @bind-Value="Movie.Title" class="form-control" placeholder="Ingrese el título" />
+                <ValidationMessage For="() => Movie.Title" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="releasedate" class="form-label">Fecha de publicación:</label>
+                <InputDate id="releasedate" @bind-Value="Movie.ReleaseDate" class="form-control" />
+                <ValidationMessage For="() => Movie.ReleaseDate" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="genre" class="form-label">Género:</label>
+                <InputSelect id="genre" @bind-Value="Movie.Genre" class="form-control">
+                    <option value="" disabled selected>Seleccione un género</option>
+                    @foreach (var genre in Genres)
+                    {
+                        <option value="@genre">@genre</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Movie.Genre" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="price" class="form-label">Precio:</label>
+                <InputNumber id="price" @bind-Value="Movie.Price" class="form-control" placeholder="Ingrese el precio" />
+                <ValidationMessage For="() => Movie.Price" class="text-danger" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Crear</button>
+            <a href="/movies" class="btn btn-secondary ms-2">Regresar</a>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Movie Movie { get; set; } = new()
+    {
+        ReleaseDate = DateOnly.FromDateTime(DateTime.Today) // Inicializar con la fecha actual
+    };
+
+    // Lista de géneros de películas
+    private List<string> Genres = new List<string>
+    {
+        "Acción",
+        "Aventura",
+        "Comedia",
+        "Drama",
+        "Ciencia Ficción",
+        "Terror",
+        "Animación",
+        "Documental",
+        "Romance",
+        "Fantasía"
+    };
+
+    private async Task AddMovie()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Movie.Add(Movie);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/movies");
+    }
+}

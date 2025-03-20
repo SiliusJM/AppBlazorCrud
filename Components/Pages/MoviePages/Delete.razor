@@ -1,0 +1,79 @@
+﻿@page "/movies/delete"
+@using Microsoft.EntityFrameworkCore
+@using BlazorApp.Models
+@inject IDbContextFactory<BlazorApp.Data.BlazorAppContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Delete</PageTitle>
+
+<h1>Delete</h1>
+
+<p>¿Seguro que quieres borrar esto?</p>
+<div>
+    <h2>Movie</h2>
+    <hr />
+    @if (movie is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Título</strong></td>
+                    <td>@movie.Title</td>
+                </tr>
+                <tr>
+                    <td><strong>Fecha de publicación</strong></td>
+                    <td>@movie.ReleaseDate.ToShortDateString()</td>
+                </tr>
+                <tr>
+                    <td><strong>Género</strong></td>
+                    <td>@movie.Genre</td>
+                </tr>
+                <tr>
+                    <td><strong>Precio</strong></td>
+                    <td>@movie.Price.ToString("C")</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <EditForm method="post" Model="movie" OnValidSubmit="DeleteMovie" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(movie is null)">Eliminar</button>
+            <a href="/movies" class="btn btn-secondary ms-2">Regresar</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Movie? movie;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        movie = await context.Movie.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (movie is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    private async Task DeleteMovie()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Movie.Remove(movie!);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/movies");
+    }
+}
